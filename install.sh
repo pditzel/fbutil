@@ -9,3 +9,6 @@
 ################################################################################
 
 # TODO
+# - Ort der Installation bestimmen
+# - Pfade in den Skripten anpassen
+# - Dateien Kopieren
