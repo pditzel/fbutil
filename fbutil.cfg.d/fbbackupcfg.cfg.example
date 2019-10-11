@@ -1,0 +1,2 @@
+CFG_BACKUP=true/false
+CFG_BACKUP_DIR="/tmp"

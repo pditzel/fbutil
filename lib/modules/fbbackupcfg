@@ -1,0 +1,45 @@
+#!/bin/bash
+
+################################################################################
+#                                                                              #
+#    Author: Patrick Ditzel (patrick@central-computer.de)                      #
+#                                                                              #
+#    License: GPLv3                                                            #
+#                                                                              #
+################################################################################
+
+################################################################################
+#                                                                              #
+# Configurationfile */pshome.dfg.d/fbbackupcfg.cfg                             #
+#                                                                              #
+# Configurationparams:                                                         #
+#   CFG_BACKUP=true/false                                                      #
+#   CFG_BACKUP_DIR="/tmp"                                                      #
+#                                                                              #
+################################################################################
+
+fbbackupcfg () {
+
+  if [ "${CFG_BACKUP}" == true ]; then
+
+    if [ "${DEBUG}" == true ]; then
+      echo "Starting Backup of FRITZBOX configuration" \
+      | /usr/bin/logger -s -i -t pshome
+    fi
+
+    TS=$(date +%S)
+    BAKPWD=$(pwgen 32 1)
+    OUT=${CFG_BACKUP_DIR}/fritzbox_"${FRITZBOXFQDN}"_"${TS}"_"${BAKPWD}".export
+
+    curl -s -k -o "$OUT" \
+    --form sid="${FBSID}" \
+    --form ImportExportPassword="${BAKPWD}" \
+    --form ConfigExport= https://"${FRITZBOXFQDN}"/cgi-bin/firmwarecfg
+
+    if [ "${DEBUG}" == true ]; then
+      echo "End Backup of FRITZBOX configuration" \
+      | /usr/bin/logger -s -i -t pshome
+    fi
+
+  fi
+}

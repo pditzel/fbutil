@@ -1,0 +1,89 @@
+#!/bin/bash
+
+################################################################################
+#                                                                              #
+#    Author: Patrick Ditzel (patrick@central-computer.de)                      #
+#                                                                              #
+#    License: GPLv3                                                            #
+#                                                                              #
+################################################################################
+
+setConfig () {
+
+    if [ -r /etc/fbutil.cfg ]; then
+        # Check if configuration is found in /etc. If yes set configvar
+        fbutilCFG=/etc/fbutil.cfg
+    elif [ -r ~/.fbutil.cfg ]; then
+        # If config is found in the backupuser home directory
+        # set configvar
+        fbutilCFG=~/.fbutil.cfg
+    elif [ -r "$(pwd)/fbutil.cfg" ]; then
+        # Configuration in the local directory?
+        fbutilCFG=$(pwd)/fbutil.cfg
+    else
+      echo "
+
+The configfile does not exists.
+
+Please create the fbutil.cfg (in \"~\" or \"/etc\" or in \".\") or write your
+settings into.
+
+Values for the configuration are:
+FRITZBOXFQDN=\"fritz.box, FQDN or IP\"
+USER=\"username\"
+PWD=\"SUPERSECRETPASSWORD\"
+DEBUG=true/false
+
+"
+      exit 1
+    fi
+
+    # Check if the configuration exists and is not empty
+    if [ -r "${fbutilCFG}" ] && [ -s "${fbutilCFG}" ]; then
+
+        # If true then read it
+        source "${fbutilCFG}"
+
+        # Is there a directory for modules?
+        if [ -d "${fbutilCFG}".d ]; then
+            # Are there configfiles?
+            if [ ! "$(find ${fbutilCFG}.d/*.cfg)" ]; then
+
+              if [ "${DEBUG}" == true ]; then
+                echo \
+                "Configurationdirectory for modules exist but it is empty" \
+                | /usr/bin/logger -s -i -t fbutil
+              fi
+
+            else
+                # ... if yes red the configurationfiles
+
+              if [ "${DEBUG}" == true ]; then
+                echo "Read module configuration" \
+                | /usr/bin/logger -s -i -t fbutil
+              fi
+
+              for MODULECFG in $(find "${fbutilCFG}".d/*.cfg); do
+                loadMod "${fbutilCFG}".d/"${MODULECFG##*/}"
+              done
+
+            fi
+
+        else
+
+          if [ "${DEBUG}" == true ]; then
+            echo "Configurationdirectory does not exists, no module to load" \
+            | /usr/bin/logger -s -i -t fbutil
+          fi
+
+        fi
+
+    else
+
+        # If not throw an errormessage
+        echo "The configfile is empty" \
+        | /usr/bin/logger -s -i -t fbutil
+
+    fi
+
+}

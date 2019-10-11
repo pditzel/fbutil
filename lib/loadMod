@@ -1,0 +1,30 @@
+#!/bin/bash
+
+################################################################################
+#                                                                              #
+#    Author: Patrick Ditzel (patrick@central-computer.de)                      #
+#                                                                              #
+#    License: GPLv3                                                            #
+#                                                                              #
+################################################################################
+
+loadMod () {
+
+  MODCFG="${1}"
+  MOD=$(echo "${MODCFG}" | awk -F "/" '{ print ( $NF )  }' | cut -d "." -f1)
+
+  if [ "${DEBUG}" == true ]; then
+    echo "Load Moduleconfiguration: ${MODCFG}" \
+    | /usr/bin/logger -s -i -t pshome
+  fi
+
+  source ${MODCFG}
+
+  if [ "${DEBUG}" == true ]; then
+    echo "Load Module: ${MOD}" \
+    | /usr/bin/logger -s -i -t pshome
+  fi
+
+  source ${LIBDIR}/modules/${MOD}
+
+}

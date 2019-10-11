@@ -1,0 +1,16 @@
+################################################################################
+# Vars for configuration
+
+FRITZBOXFQDN="IP or FQDN"
+
+USER="username"
+
+PWD="supersecretpassword"
+
+DEBUG=true/false
+
+LIBDIR="./lib"
+
+BINDIR="./bin"
+
+################################################################################

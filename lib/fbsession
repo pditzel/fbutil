@@ -1,0 +1,79 @@
+#!/bin/bash
+
+################################################################################
+#                                                                              #
+#    Author: Patrick Ditzel (patrick@central-computer.de)                      #
+#                                                                              #
+#    License: GPLv3                                                            #
+#                                                                              #
+################################################################################
+
+getFBSID () {
+
+    # Login to FRITZ!BOX (challenge/response) and create SID
+
+    # Get challenge
+    CHALLENGE=$(curl -s -k \
+    "https://${FRITZBOXFQDN}/login_sid.lua?username=${USER}" \
+    | grep -Po '(?<=<Challenge>).*(?=</Challenge>)')
+
+    if [ "${DEBUG}" == true ]; then
+        echo -e "Challenge:\n $CHALLENGE \n" \
+        | /usr/bin/logger -s -i -t pshome
+    fi
+
+    # Hash login
+    MD5=$(echo -n "${CHALLENGE}-${PWD}" \
+    | iconv -f ISO8859-1 -t UTF-16LE \
+    | md5sum -b \
+    | awk '{print substr($0,1,32)}')
+
+    if [ "${DEBUG}" == true ]; then
+            echo -e "MD5:\n $MD5 \n" \
+            | /usr/bin/logger -s -i -t pshome
+    fi
+
+    # Create response
+    RESPONSE="${CHALLENGE}-${MD5}"
+
+    if [ "${DEBUG}" == true ]; then
+            echo -e "REPONSE:\n $RESPONSE \n" \
+            | /usr/bin/logger -s -i -t pshome
+    fi
+
+    # Send login and grep sid
+    SID=$(curl -i -s -k -d \
+    "response=${RESPONSE}&username=${USER}" \
+    https://"${FRITZBOXFQDN}" \
+    | grep -Po -m 1 '(?<=sid=)[a-f\d]+' \
+    | sort -u )
+
+    if [ "${DEBUG}" == true ]; then
+            echo -e "SID:\n $SID \n" \
+            | /usr/bin/logger -s -i -t pshome
+    fi
+
+    echo "${SID}"
+
+}
+
+closeSession () {
+
+  if [ "${DEBUG}" == true ]; then
+
+    SID=$(curl -s -k "https://${FRITZBOXFQDN}/login_sid.lua?logout=1&sid=$1" \
+    | xmllint --format - \
+    |  grep SID \
+    | cut -d ">" -f2 \
+    | cut -d "<" -f1)
+    echo -e "Close Session - SID:\n $SID \n" \
+    | /usr/bin/logger -s -i -t pshome
+
+  else
+
+    curl -s -k \
+    "https://${FRITZBOXFQDN}/login_sid.lua?logout=1&sid=$1" > /dev/null
+
+  fi
+
+}

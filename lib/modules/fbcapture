@@ -1,0 +1,123 @@
+#!/bin/bash
+
+################################################################################
+#                                                                              #
+#    Author: Patrick Ditzel (patrick@central-computer.de)                      #
+#                                                                              #
+#    License: GPLv3                                                            #
+#                                                                              #
+################################################################################
+
+################################################################################
+#                                                                              #
+# Configurationfile */pshome.dfg.d/fbcapture.cfg                               #
+#                                                                              #
+# Configurationparams:                                                         #
+#   FB_CAPTURE=true/false                                                      #
+#   PIDFILE=/var/run/tcpreplay.pid                                             #
+#                                                                              #
+################################################################################
+
+startCapture () {
+
+    # Create dummy interface for captureoutput
+    DUMMYMOD=$(lsmod | grep dummy | cut -d " " -f1)
+
+    if [ "${DUMMYMOD}" != "dummy" ]; then
+        sudo modprobe -v dummy numdummies=1 \
+        | /usr/bin/logger -s -i -t pshome
+        if [ "${DEBUG}" == true ]; then
+          echo "
+          Sleeping for 15 seconds to load the dummy kernelmodule correctly" \
+          | /usr/bin/logger -s -i -t pshome
+        fi
+        sleep 15
+        sudo /sbin/ifconfig dummy0 up
+        sudo /sbin/ifconfig dummy0 promisc
+    else
+        if [ "${DEBUG}" == true ]; then
+          echo "Kernelmodule dummy is already active" \
+          | /usr/bin/logger -s -i -t pshome
+        fi
+        sudo /sbin/ifconfig dummy0 up
+        sudo /sbin/ifconfig dummy0 promisc
+    fi
+
+    # Capture PCAP-Stream for Internetdevice from the FRITZ!BOX           #
+    if [ "${SID}" != "0000000000000000" ]; then
+        if [ "${DEBUG}" == true ]; then
+          echo "
+          Start getting the stream from the FRITZ!BOX and redirect to dummy0" \
+          | /usr/bin/logger -s -i -t pshome
+        fi
+        CONTEXT="cgi-bin/capture_notimeout"
+        CMD="ifaceorminor="
+        PRM="snaplen=1600&capture=Start"
+        sudo /usr/bin/wget -O - \
+        "https://$FRITZBOXFQDN/${CONTEXT}?${CMD}${FBNETDEV}&${PRM}&sid=$SID" \
+        2>/dev/null \
+        | sudo /usr/bin/tcpreplay -q --topspeed -i dummy0 - &
+
+        # Write tcpreplay-PID into pidfile for later use
+        echo $! > $PIDFILE
+        if [ "${DEBUG}" == true ]; then
+          echo "Writing PID and SID into files for later use" \
+          | /usr/bin/logger -s -i -t pshome
+        fi
+        sleep 30
+    else
+        echo "Can't establish SID-Connection" \
+        | /usr/bin/logger -s -i -t pshome
+        sudo /sbin/ifdown dummy0
+    fi
+}
+
+stopCapture () {
+
+    # Turn off tcpreplay an delete pidfile
+
+    if [ -e ${PIDFILE} ]; then
+        if [ "${DEBUG}" == true ]; then
+          echo "Killing the capturingproces and remove PID-file" \
+          | /usr/bin/logger -s -i -t pshome
+        fi
+               sudo /bin/kill -9 $(/bin/cat ${PIDFILE})
+               /bin/rm -f ${PIDFILE}
+    else
+      echo "$PIDFILE does not exist." \
+      | /usr/bin/logger -s -i -t pshome
+    fi
+
+    # Turn down interface dummy0 and remove kernelmodule
+    INTERFACEISTHERE=$(grep "dummy0" /proc/net/dev)
+    if [ -n "${INTERFACEISTHERE}" ]; then
+        if [ "${DEBUG}" == true ]; then
+          echo "Turn down dummy0." \
+          | /usr/bin/logger -s -i -t pshome
+        fi
+        sudo /sbin/ifconfig dummy0 down
+    else
+        echo "Interface dummy0 not found, cant turn it down." \
+        | /usr/bin/logger -s -i -t pshome
+    fi
+
+    MODULEISTHERE=$(grep "dummy" /proc/modules)
+    if [ -n "${MODULEISTHERE}" ]; then
+      if [ "${DEBUG}" == true ]; then
+        echo "Remove kernelmodule dummy." \
+        | /usr/bin/logger -s -i -t pshome
+      fi
+        sudo /sbin/rmmod dummy
+    else
+        echo "
+        Kernelmodule dummy is actualy not loaded into the kernel,
+        can't remove it." \
+        | /usr/bin/logger -s -i -t pshome
+    fi
+
+}
+
+fbcapture() {
+  startCapture
+  stopCapture
+}

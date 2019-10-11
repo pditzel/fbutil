@@ -1,0 +1,3 @@
+FB_CAPTURE=true/false
+PIDFILE=/var/run/tcpreplay.pid
+FBNETDEV=2-1

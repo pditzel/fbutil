@@ -1,0 +1,32 @@
+#!/bin/bash
+
+################################################################################
+#                                                                              #
+#    Author: Patrick Ditzel (patrick@central-computer.de)                      #
+#                                                                              #
+#    License: GPLv3                                                            #
+#                                                                              #
+################################################################################
+
+################################################################################
+#                                                                              #
+# Configurationfile */pshome.dfg.d/fbshdevinfo.cfg                             #
+#                                                                              #
+# Configurationparams:                                                         #
+#   GET_SH_DEV_INFO=true/false                                                 #
+#                                                                              #
+################################################################################
+
+fbshdevinfo () {
+
+  if [ "${GET_SH_DEV_INFO}" == true ]; then
+
+    CONTEXT="/webservices/homeautoswitch.lua"
+    CMD="switchcmd=getdevicelistinfos&sid"
+
+    curl -s -k "https://${FRITZBOXFQDN}${CONTEXT}?${CMD}=$FBSID" \
+    | xmllint --format - \
+    |  pygmentize -l xml
+
+  fi
+}
