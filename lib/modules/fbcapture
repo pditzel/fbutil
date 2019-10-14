@@ -118,6 +118,8 @@ stopCapture () {
 }
 
 fbcapture() {
-  startCapture
-  stopCapture
+	if [ "${FB_CAPTURE}" == true ]; then
+		startCapture
+		stopCapture
+	fi
 }
