@@ -1,0 +1,35 @@
+#!/bin/bash
+
+################################################################################
+#                                                                              #
+#    Author: Patrick Ditzel (patrick@central-computer.de)                      #
+#                                                                              #
+#    License: GPLv3                                                            #
+#                                                                              #
+################################################################################
+
+################################################################################
+#                                                                              #
+# Configurationfile */pshome.dfg.d/fbshdevinfo.cfg                             #
+#                                                                              #
+# Configurationparams:                                                         #
+#   GET_SH_DEV_INFO=true/false                                                 #
+#                                                                              #
+################################################################################
+
+fbsh2mqttdevinfo () {
+
+  if [ "${SH_DEV_2_MQTT}" == true ]; then
+
+    CONTEXT="/webservices/homeautoswitch.lua"
+    CMD="switchcmd=getdevicelistinfos&sid"
+
+    curl -s -k "https://${FRITZBOXFQDN}${CONTEXT}?${CMD}=$FBSID" \
+    | xmllint --format -
+
+  fi
+}
+
+
+
+# mosquitto_pub -h mqtt.ks.central-computer.de -p 8883 --tls-version tlsv1.2 -t cc/test -m test --cafile /home/patrick/Projekte/CC-CA/ca/certs/ca.cert.pem

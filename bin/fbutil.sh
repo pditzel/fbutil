@@ -48,6 +48,8 @@ main () {
   # Capture FB NetworDeviceTraffic
   fbcapture
 
+  # Read SmartHomeDevices und write to MQTT
+  fbsh2mqttdevinfo
 
   #============================================================================#
 
